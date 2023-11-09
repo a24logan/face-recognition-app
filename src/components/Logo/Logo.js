@@ -1,6 +1,7 @@
 import React from "react";
 import { Tilt } from "react-tilt";
 import "./logo.css";
+import brain from "./brain.png";
 const defaultOptions = {
   reverse: false, // reverse the tilt direction
   max: 55, // max tilt rotation (degrees)
@@ -21,7 +22,9 @@ const Logo = () => {
         options={defaultOptions}
         style={{ height: 150, width: 150 }}
       >
-        <div>👽</div>
+        <div className="Tilt-inner pa3">
+          <img alt="logo" src={brain} style={{ paddingTop: "5px" }}></img>
+        </div>
       </Tilt>
     </div>
   );
