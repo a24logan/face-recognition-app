@@ -4,12 +4,26 @@ import ImageLinkForm from "./components/ImageLinkForm/ImageLinkForm";
 import Rank from "./components/Rank/Rank";
 import Particles from "react-particles";
 import { loadSlim } from "tsparticles-slim"; // if you are going to use `loadSlim`, install the "tsparticles-slim" package too.
-
+import FaceRecognition from "./components/FaceRecognition/FaceRecognition";
 import Navigation from "./components/Navigation/Navigation";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
+
+// Your PAT (Personal Access Token) can be found in the portal under Authentification
+const PAT = "6488fd8e8f37432c80fd151e20bdfa21";
+// Specify the correct user_id/app_id pairings
+// Since you're making inferences outside your app's scope
+const USER_ID = "a24logan";
+const APP_ID = "my-first-application-4n66";
+// Change these to whatever model and image URL you want to use
+const MODEL_ID = "face-detection";
+const MODEL_VERSION_ID = "6dc7e46bc9124c5c8824be4822abe105";
+
 function App() {
+  const [input, setInput] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
+  const [box, setBox] = useState({});
+
   const particlesInit = useCallback(async (engine) => {
-    console.log(engine);
     // you can initiate the tsParticles instance (engine) here, adding custom shapes or presets
     // this loads the tsparticles package bundle, it's the easiest method for getting everything ready
     // starting from v2 you can add only the features you need reducing the bundle size
@@ -20,6 +34,70 @@ function App() {
   const particlesLoaded = useCallback(async (container) => {
     await console.log(container);
   }, []);
+  const onInputChange = (e) => {
+    setInput(e);
+  };
+  const calcFaceLocation = (loc) => {
+    const face = loc.outputs[0].data.regions[0].region_info.bounding_box;
+    const image = document.getElementById("inputImage");
+    const width = Number(image.width);
+    const height = Number(image.height);
+    console.log(width, height);
+    return {
+      leftCol: face.left_col * width,
+      topRow: face.top_row * height,
+      rightCol: width - face.right_col * width,
+      bottomRow: height - face.bottom_row * height,
+    };
+  };
+
+  const onButtonSubmit = () => {
+    const raw = JSON.stringify({
+      user_app_id: {
+        user_id: USER_ID,
+        app_id: APP_ID,
+      },
+      inputs: [
+        {
+          data: {
+            image: {
+              url: input,
+            },
+          },
+        },
+      ],
+    });
+
+    const requestOptions = {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        Authorization: "Key " + PAT,
+      },
+      body: raw,
+    };
+
+    // NOTE: MODEL_VERSION_ID is optional, you can also call prediction with the MODEL_ID only
+    // https://api.clarifai.com/v2/models/{YOUR_MODEL_ID}/outputs
+    // this will default to the latest version_id
+
+    fetch(
+      "https://api.clarifai.com/v2/models/" +
+        MODEL_ID +
+        "/versions/" +
+        MODEL_VERSION_ID +
+        "/outputs",
+      requestOptions
+    )
+      .then((response) => response.text())
+      .then((result) => {
+        let res = JSON.parse(result);
+        setBox(calcFaceLocation(res));
+      })
+      .catch((error) => console.log("error", error));
+    setImageUrl(input);
+  };
+
   return (
     <div className="App">
       <Particles
@@ -99,8 +177,11 @@ function App() {
       <Navigation></Navigation>
       <Logo></Logo>
       <Rank />
-      <ImageLinkForm></ImageLinkForm>
-      {/* <FaceRecognition></FaceRecognition> */}
+      <ImageLinkForm
+        onInputChange={onInputChange}
+        onButtonSubmit={onButtonSubmit}
+      ></ImageLinkForm>
+      <FaceRecognition box={box} imageUrl={imageUrl}></FaceRecognition>
     </div>
   );
 }
