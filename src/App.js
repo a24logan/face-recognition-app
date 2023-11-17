@@ -7,7 +7,8 @@ import { loadSlim } from "tsparticles-slim"; // if you are going to use `loadSli
 import FaceRecognition from "./components/FaceRecognition/FaceRecognition";
 import Navigation from "./components/Navigation/Navigation";
 import { useCallback, useState } from "react";
-
+import SignIn from "./components/SignIn/SignIn";
+import Register from "./components/Register/Register";
 // Your PAT (Personal Access Token) can be found in the portal under Authentification
 const PAT = "6488fd8e8f37432c80fd151e20bdfa21";
 // Specify the correct user_id/app_id pairings
@@ -22,6 +23,8 @@ function App() {
   const [input, setInput] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [box, setBox] = useState({});
+  const [route, setRoute] = useState("signin");
+  const [isSignedIn, setIsSignedIn] = useState(false);
 
   const particlesInit = useCallback(async (engine) => {
     // you can initiate the tsParticles instance (engine) here, adding custom shapes or presets
@@ -37,6 +40,11 @@ function App() {
   const onInputChange = (e) => {
     setInput(e);
   };
+
+  // componentDidMount() {
+  //   fetch('http://localhose:3000')
+  //   .then(res = res.json()).then(console.log(data))
+  // }
   const calcFaceLocation = (loc) => {
     const face = loc.outputs[0].data.regions[0].region_info.bounding_box;
     const image = document.getElementById("inputImage");
@@ -97,7 +105,14 @@ function App() {
       .catch((error) => console.log("error", error));
     setImageUrl(input);
   };
-
+  const onRouteChange = (newRoute) => {
+    if (newRoute === "home") {
+      setIsSignedIn(true);
+    } else {
+      setIsSignedIn(false);
+    }
+    setRoute(newRoute);
+  };
   return (
     <div className="App">
       <Particles
@@ -174,14 +189,26 @@ function App() {
         }}
       />
 
-      <Navigation></Navigation>
-      <Logo></Logo>
-      <Rank />
-      <ImageLinkForm
-        onInputChange={onInputChange}
-        onButtonSubmit={onButtonSubmit}
-      ></ImageLinkForm>
-      <FaceRecognition box={box} imageUrl={imageUrl}></FaceRecognition>
+      <Navigation
+        onRouteChange={onRouteChange}
+        isSignedIn={isSignedIn}
+      ></Navigation>
+      {route === "home" ? (
+        <>
+          {" "}
+          <Logo></Logo>
+          <Rank />
+          <ImageLinkForm
+            onInputChange={onInputChange}
+            onButtonSubmit={onButtonSubmit}
+          ></ImageLinkForm>
+          <FaceRecognition box={box} imageUrl={imageUrl}></FaceRecognition>
+        </>
+      ) : route == "signin" ? (
+        <SignIn onRouteChange={onRouteChange}></SignIn>
+      ) : (
+        <Register onRouteChange={onRouteChange}></Register>
+      )}
     </div>
   );
 }
